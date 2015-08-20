@@ -1,0 +1,97 @@
+---
+title: "Regression Models"
+author: "Aaditya Bhat"
+date: "July 21, 2015"
+output: html_document
+---
+##Executive Summary
+The goal of this analysis is to explore the relationship between a set of variables such as number of cylinders, displacement, gross horsepower, etc and miles per gallon (MPG). For the analysis 'Motor Trend Car Road Tests' dataset in R is used. This data was extracted from 1974 Motor Trend US magazine. The analysis answers the following two questions:
+
+* Is an automatic or manual transmission better for MPG?
+* Quantify the MPG difference between automatic and manual transmissions?
+
+##Data processing
+Loading the required packages
+```{r, loadPackages}
+library(ggplot2)
+```
+
+Loading the 'mtcars' data set. Coverting appropriate variables into factors.
+```{r, dataset}
+data("mtcars")
+mtcars$cyl <- factor(mtcars$cyl)
+mtcars$vs <- factor(mtcars$vs, labels = c('V-Engine', 'Straight Engine'))
+mtcars$gear <- factor(mtcars$gear)
+mtcars$carb <- factor(mtcars$carb)
+mtcars$am <- factor(mtcars$am,labels=c('Automatic','Manual'))
+```
+
+##Exploratory Analysis
+Refer apendix, to see the exploratory plots.
+
+##Hypothesis Testing.
+Checking the variance of both the samples.
+```{r, variance_check}
+var(mtcars$mpg[mtcars$am == 'Automatic'])
+var(mtcars$mpg[mtcars$am == 'Manual'])
+```
+As the variance isn't equal, performing Welch's t test.
+```{r, welchs t test, results= 'hide'}
+t.test(mtcars$mpg~mtcars$am,conf.level=0.95)
+```
+The summary of the Welch's t test is in the appendix.
+As p-value < 0.05, we reject the Null Hypothesis that mean MPG is same for both the transmission types.
+
+##Fitting Models
+Fitting a linear model with 'mpg' as the response and 'am' as the regressor.
+```{r, model1, results='hide'}
+model1 <- lm(mpg~am, data = mtcars)
+summary(model1)
+```
+The summary for this model can be found in the appendix. As R-Squarred value is 0.3598, this model only accounts for 36% variablity in mpg. Hence this models isn't a good fit.
+A linear model with 'mpg' as the response and all the remaining variables as the regressors will result in overfitting. Hence we obtain the best model by backward selection, using 'step' function in r.
+```{r,  best model, results= 'hide'}
+model2 <- lm(mpg~., data = mtcars)
+best_model <- step(model2, direction = "backward")
+```
+```{r, best model summary}
+summary(best_model)
+```
+As the R-squarred value is 0.8659, the model accounts for 86.6% variablity in the mpg. This model is a good fit for the data. Various diagnostic plots are included in appendix.
+
+##Conclusion
+According to the Welch's test and regression model, Manual Transmittion is better for mpg. Manual Transmission results in an increase of 1.8092 in mpg, keeping other variables constant. However this relation isn't very significant.
+
+##Apendix
+
+###Welch's t test summary
+```{r, echo = FALSE}
+t.test(mtcars$mpg~mtcars$am,conf.level=0.95)
+```
+
+###Model 1 summary
+```{r}
+model1 <- lm(mpg~am, data = mtcars)
+summary(model1)
+```
+
+###Exploratory Analysis
+Mtcars pair plot
+```{r,pair plot}
+pairs(mtcars)
+```
+
+
+box plot of mpg ~ am
+```{r, box plot}
+g <- ggplot(data = mtcars, aes(am,mpg))
+g+geom_boxplot()+labs(x = 'Transmission', y = 'Miles per Gallon')
+```
+
+
+###Residual and Diagnostic Plots
+
+```{r, diagnostic plots}
+par(mfrow=c(2, 2))
+plot(best_model)
+```
